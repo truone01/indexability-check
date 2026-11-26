@@ -2,6 +2,10 @@
 
 Is every important URL on your site still indexable by Google? One file, zero dependencies, Node 18+. Run it after each deploy, locally or in CI.
 
+Prefer the browser? Check one URL with the [online indexability checker](https://crawlcanary.2-29-18-178.sslip.io/indexability-checker?ref=github).
+
+`--public-only` refuses private, loopback and link-local addresses (redirects and DNS answers included) and ports other than 80/443, for running the checker as a web service.
+
 It catches the deploy mistakes that quietly drop pages out of Google:
 - **robots.txt** blocking the URL (RFC 9309 matching: user-agent groups, longest match, `*` and `$`), including a robots.txt that returns 5xx, which Google treats as "disallow everything"
 - **noindex** in `<meta name="robots">`, `<meta name="googlebot">` or the `X-Robots-Tag` header (including `googlebot:`-scoped values)

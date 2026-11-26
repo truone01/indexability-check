@@ -16,6 +16,7 @@ curl -s https://example.com/page | grep -io '&lt;meta[^&gt;]*robots[^&gt;]*&gt;'
 <pre>node indexability-check.mjs https://example.com/ https://example.com/pricing
 node indexability-check.mjs --sitemap https://example.com/sitemap.xml</pre>
 <p>The <a href="https://github.com/truone01/indexability-check">free checker</a> reports every noindex source per URL, applies bot-scoped headers correctly (<code>bingbot: noindex</code> doesn't affect Googlebot), and checks robots.txt and canonicals too. One caveat: a noindex added by JavaScript after page load isn't visible without rendering.</p>
+<p>No command line handy? Check one URL with the <a href="https://crawlcanary.2-29-18-178.sslip.io/indexability-checker?ref=ghpages">online indexability checker</a>.</p>
 <aside><p>Look after many client sites? <strong>CrawlCanary</strong> (in development) will check their important URLs every hour and email you as soon as one is blocked by robots.txt, set to noindex or canonicalised to another host. $19/month for up to 25 sites. It isn't available yet: <a href="https://crawlcanary.2-29-18-178.sslip.io/?ref=ghpages">price and waitlist</a>.</p></aside>
 </main>
 <footer><p>Free, MIT-licensed tooling. Not affiliated with Google. Last updated 26 November 2026.</p></footer>

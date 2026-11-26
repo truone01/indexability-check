@@ -2,7 +2,12 @@
 // indexability-check: is each URL still indexable by Google?
 // Checks robots.txt rules (RFC 9309), meta robots, X-Robots-Tag, canonical and status code.
 // Zero dependencies, Node 18+.
-// Usage: node indexability-check.mjs <url ...> [--sitemap <url>] [--max 50] [--ua Googlebot] [--json]
+// Usage: node indexability-check.mjs <url ...> [--sitemap <url>] [--max 50] [--ua Googlebot] [--json] [--public-only]
+
+import dns from 'node:dns';
+import http from 'node:http';
+import https from 'node:https';
+import net from 'node:net';
 
 const UA_HEADER = 'Mozilla/5.0 (compatible; indexability-check/1.0; +https://github.com/truone01/indexability-check)';
 
@@ -99,10 +104,81 @@ export function canonicalOf(html, headers, baseUrl) {
   return null;
 }
 
-async function fetchText(url, max = 2_000_000) {
-  const res = await fetch(url, { redirect: 'manual', headers: { 'user-agent': UA_HEADER, accept: 'text/html,application/xhtml+xml,*/*' }, signal: AbortSignal.timeout(15000) });
-  const text = res.status >= 300 && res.status < 400 ? '' : (await res.text()).slice(0, max);
-  return { res, text };
+let publicOnly = false;
+/** --public-only: refuse private, loopback, link-local and reserved addresses (for running the checker as a web service). */
+export function setPublicOnly(on) { publicOnly = on; }
+
+export function isPublicAddress(ip) {
+  if (net.isIPv4(ip)) {
+    const [a, b, c] = ip.split('.').map(Number);
+    if (a === 0 || a === 10 || a === 127 || a >= 224) return false; // this-net, private, loopback, multicast, reserved, broadcast
+    if (a === 100 && b >= 64 && b <= 127) return false; // CGNAT
+    if (a === 169 && b === 254) return false; // link-local, cloud metadata
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 168) return false;
+    if (a === 192 && b === 0 && (c === 0 || c === 2)) return false; // IETF, TEST-NET-1
+    if (a === 198 && (b === 18 || b === 19)) return false; // benchmarking
+    if (a === 198 && b === 51 && c === 100) return false; // TEST-NET-2
+    if (a === 203 && b === 0 && c === 113) return false; // TEST-NET-3
+    return true;
+  }
+  if (net.isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
+    if (mapped) return isPublicAddress(mapped[1]);
+    const first = parseInt(lower.split(':')[0] || '0', 16);
+    if ((first & 0xe000) !== 0x2000) return false; // only global unicast 2000::/3
+    if (first === 0x2002) return false; // 6to4 can wrap private IPv4
+    if (/^2001:(0?db8|0{0,4}):/.test(lower) || /^2001::/.test(lower)) return false; // documentation, Teredo
+    return true;
+  }
+  return false;
+}
+
+function publicLookup(hostname, options, callback) {
+  dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
+    if (err) return callback(err);
+    const bad = addresses.find((a) => !isPublicAddress(a.address));
+    if (bad || !addresses.length) return callback(new Error(`refusing non-public address for ${hostname}`));
+    if (options.all) return callback(null, addresses);
+    callback(null, addresses[0].address, addresses[0].family);
+  });
+}
+
+function fetchText(url, max = 2_000_000) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return reject(new Error(`unsupported protocol ${u.protocol}`));
+    if (publicOnly) {
+      const host = u.hostname.replace(/^\[|\]$/g, '');
+      if (u.port && u.port !== '80' && u.port !== '443') return reject(new Error('only ports 80 and 443 are checked'));
+      if (net.isIP(host) && !isPublicAddress(host)) return reject(new Error('refusing non-public address'));
+    }
+    const lib = u.protocol === 'https:' ? https : http;
+    const req = lib.get(u, {
+      headers: { 'user-agent': UA_HEADER, accept: 'text/html,application/xhtml+xml,*/*' },
+      ...(publicOnly ? { lookup: publicLookup } : {}),
+      timeout: 15000,
+    }, (res) => {
+      const headers = new Headers();
+      for (const [k, v] of Object.entries(res.headers)) headers.set(k, Array.isArray(v) ? v.join(', ') : String(v));
+      const status = res.statusCode;
+      if (status >= 300 && status < 400) { res.destroy(); return resolve({ res: { status, headers }, text: '' }); }
+      const chunks = [];
+      let size = 0;
+      res.on('data', (chunk) => {
+        size += chunk.length;
+        chunks.push(chunk);
+        if (size >= max) res.destroy();
+      });
+      const done = () => resolve({ res: { status, headers }, text: Buffer.concat(chunks).toString('utf8').slice(0, max) });
+      res.on('end', done);
+      res.on('close', done);
+      res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(new Error('timed out after 15s')));
+    req.on('error', reject);
+  });
 }
 
 const robotsCache = new Map();
@@ -188,10 +264,11 @@ async function main() {
   const max = Number(opt('--max', '50'));
   const userAgent = opt('--ua', 'Googlebot');
   const json = args.includes('--json');
+  setPublicOnly(args.includes('--public-only'));
   const urls = args.filter((a) => !a.startsWith('--'));
   if (sitemap) urls.push(...(await sitemapUrls(sitemap, max)));
   if (!urls.length) {
-    console.error('Usage: node indexability-check.mjs <url ...> [--sitemap <url>] [--max 50] [--ua Googlebot] [--json]');
+    console.error('Usage: node indexability-check.mjs <url ...> [--sitemap <url>] [--max 50] [--ua Googlebot] [--json] [--public-only]');
     process.exit(2);
   }
   const results = [];

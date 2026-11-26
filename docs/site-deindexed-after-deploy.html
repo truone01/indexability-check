@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pages dropped out of Google after a deploy: a checklist</title><meta name="description" content="Traffic fell after a release? Check these five deploy mistakes that make pages unindexable: robots.txt, meta noindex, X-Robots-Tag, canonical to staging, and status codes."><link rel="canonical" href="https://truone01.github.io/indexability-check/site-deindexed-after-deploy.html">
+<style>body{font:17px/1.6 system-ui,sans-serif;max-width:760px;margin:0 auto;padding:24px 16px;color:#1d1d1f;background:#fff}code,pre{font:14px ui-monospace,monospace;background:#f3f3f5;border-radius:4px}pre{padding:12px;overflow-x:auto}code{padding:1px 4px;overflow-wrap:anywhere}a{color:#0a58ca}nav,footer{font-size:15px;color:#555}aside{border-left:3px solid #0a58ca;padding:4px 14px;background:#f5f8ff}@media (prefers-color-scheme:dark){body{background:#111;color:#eee}code,pre{background:#222}a{color:#7ab0ff}aside{background:#18202e}nav,footer{color:#aaa}}</style></head><body>
+<nav><a href="https://truone01.github.io/indexability-check/">Indexability guides</a> · <a href="https://github.com/truone01/indexability-check">Free indexability checker on GitHub</a></nav>
+<main><h1>Pages dropped out of Google after a deploy: a checklist</h1>
+<p>If organic traffic fell a few days after a release, check these five things first. Each one tells Google to drop or ignore pages, and each is easy to ship by accident.</p>
+<ol><li><strong>robots.txt.</strong> Open <code>/robots.txt</code>. A staging file with <code>User-agent: *</code> and <code>Disallow: /</code> blocks crawling of the whole site. Also check it returns 200: Google treats a robots.txt that returns 5xx as "disallow everything".</li>
+<li><strong>meta robots.</strong> View the source of a key page and search for <code>noindex</code> in <code>&lt;meta name="robots"&gt;</code> or <code>&lt;meta name="googlebot"&gt;</code>. CMS settings like WordPress's "Discourage search engines from indexing this site" add it to every page.</li>
+<li><strong>X-Robots-Tag header.</strong> Run <code>curl -sI https://example.com/ | grep -i x-robots</code>. Server or CDN rules copied from staging often add <code>X-Robots-Tag: noindex</code>.</li>
+<li><strong>Canonical.</strong> Check that <code>&lt;link rel="canonical"&gt;</code> points to the production URL, not <code>staging.</code>, <code>localhost</code> or another environment.</li>
+<li><strong>Status codes and redirects.</strong> Key pages should answer 200 directly or after one redirect, not 404, 5xx or a redirect loop.</li></ol>
+<p>The <a href="https://github.com/truone01/indexability-check">free checker</a> runs all five against a list of URLs or your sitemap in one command:</p>
+<pre>node indexability-check.mjs --sitemap https://example.com/sitemap.xml --max 200</pre>
+<h2>After fixing it</h2>
+<p>Use URL Inspection in Search Console to request indexing of the most important pages, and resubmit the sitemap. Recovery usually takes days to weeks. To catch it next time before traffic drops, run the check after every deploy (it exits with code 1 on any problem, so it can fail a CI pipeline).</p>
+<aside><p>Look after many client sites? <strong>CrawlCanary</strong> (in development) will check their important URLs every hour and email you as soon as one is blocked by robots.txt, set to noindex or canonicalised to another host. $19/month for up to 25 sites. It isn't available yet: <a href="https://crawlcanary.2-29-18-178.sslip.io/?ref=ghpages">price and waitlist</a>.</p></aside>
+</main>
+<footer><p>Free, MIT-licensed tooling. Not affiliated with Google. Last updated 26 November 2026.</p></footer>
+</body></html>

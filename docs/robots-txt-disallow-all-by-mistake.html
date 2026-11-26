@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>robots.txt "Disallow: /" shipped to production: what happens and what to do</title><meta name="description" content="What happens when a staging robots.txt with Disallow: / reaches production, how fast Google reacts, how to fix it and how to stop it happening again."><link rel="canonical" href="https://truone01.github.io/indexability-check/robots-txt-disallow-all-by-mistake.html">
+<style>body{font:17px/1.6 system-ui,sans-serif;max-width:760px;margin:0 auto;padding:24px 16px;color:#1d1d1f;background:#fff}code,pre{font:14px ui-monospace,monospace;background:#f3f3f5;border-radius:4px}pre{padding:12px;overflow-x:auto}code{padding:1px 4px;overflow-wrap:anywhere}a{color:#0a58ca}nav,footer{font-size:15px;color:#555}aside{border-left:3px solid #0a58ca;padding:4px 14px;background:#f5f8ff}@media (prefers-color-scheme:dark){body{background:#111;color:#eee}code,pre{background:#222}a{color:#7ab0ff}aside{background:#18202e}nav,footer{color:#aaa}}</style></head><body>
+<nav><a href="https://truone01.github.io/indexability-check/">Indexability guides</a> · <a href="https://github.com/truone01/indexability-check">Free indexability checker on GitHub</a></nav>
+<main><h1>robots.txt "Disallow: /" shipped to production: what happens and what to do</h1>
+<p>A staging robots.txt usually looks like this:</p>
+<pre>User-agent: *
+Disallow: /</pre>
+<p>On production it tells every compliant crawler to fetch nothing. Google can still show already-known URLs for a while, without a description, but it stops crawling, so changes and new pages go unseen. Over time, rankings and traffic slide.</p>
+<h2>Fix it</h2>
+<ol><li>Deploy the production robots.txt, or remove the blanket <code>Disallow: /</code>.</li>
+<li>In Search Console, check the robots.txt report so Google picks up the new file sooner.</li>
+<li>Request indexing for the key URLs and resubmit the sitemap.</li></ol>
+<h2>Stop it happening again</h2>
+<ul><li>Generate robots.txt per environment at build time instead of committing one file.</li>
+<li>Protect staging with HTTP authentication rather than robots.txt. robots.txt doesn't keep pages private anyway.</li>
+<li>Check after every deploy. The <a href="https://github.com/truone01/indexability-check">free checker</a> applies Google's matching rules (user-agent groups, longest match, <code>*</code> and <code>$</code>) to your real URLs, and also flags a robots.txt that returns 5xx.</li></ul>
+<aside><p>Look after many client sites? <strong>CrawlCanary</strong> (in development) will check their important URLs every hour and email you as soon as one is blocked by robots.txt, set to noindex or canonicalised to another host. $19/month for up to 25 sites. It isn't available yet: <a href="https://crawlcanary.2-29-18-178.sslip.io/?ref=ghpages">price and waitlist</a>.</p></aside>
+</main>
+<footer><p>Free, MIT-licensed tooling. Not affiliated with Google. Last updated 26 November 2026.</p></footer>
+</body></html>

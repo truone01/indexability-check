@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to check for noindex in meta tags and the X-Robots-Tag header</title><meta name="description" content="Find noindex wherever it hides: meta robots, meta googlebot, and X-Robots-Tag HTTP headers (including bot-scoped values), with curl and a free checker."><link rel="canonical" href="https://truone01.github.io/indexability-check/check-x-robots-tag-noindex.html">
+<style>body{font:17px/1.6 system-ui,sans-serif;max-width:760px;margin:0 auto;padding:24px 16px;color:#1d1d1f;background:#fff}code,pre{font:14px ui-monospace,monospace;background:#f3f3f5;border-radius:4px}pre{padding:12px;overflow-x:auto}code{padding:1px 4px;overflow-wrap:anywhere}a{color:#0a58ca}nav,footer{font-size:15px;color:#555}aside{border-left:3px solid #0a58ca;padding:4px 14px;background:#f5f8ff}@media (prefers-color-scheme:dark){body{background:#111;color:#eee}code,pre{background:#222}a{color:#7ab0ff}aside{background:#18202e}nav,footer{color:#aaa}}</style></head><body>
+<nav><a href="https://truone01.github.io/indexability-check/">Indexability guides</a> · <a href="https://github.com/truone01/indexability-check">Free indexability checker on GitHub</a></nav>
+<main><h1>How to check for noindex in meta tags and the X-Robots-Tag header</h1>
+<p><code>noindex</code> can come from three places, and the last one never shows in the page source:</p>
+<ul><li><code>&lt;meta name="robots" content="noindex"&gt;</code> applies to all crawlers.</li>
+<li><code>&lt;meta name="googlebot" content="noindex"&gt;</code> applies to Google only.</li>
+<li>The HTTP header <code>X-Robots-Tag: noindex</code>, or a bot-scoped value such as <code>X-Robots-Tag: googlebot: noindex</code>, set by the server, CDN or framework.</li></ul>
+<p><code>none</code> means the same as <code>noindex, nofollow</code>.</p>
+<h2>With curl</h2>
+<pre>curl -sI https://example.com/page | grep -i '^x-robots-tag'
+curl -s https://example.com/page | grep -io '&lt;meta[^&gt;]*robots[^&gt;]*&gt;'</pre>
+<h2>For many URLs</h2>
+<pre>node indexability-check.mjs https://example.com/ https://example.com/pricing
+node indexability-check.mjs --sitemap https://example.com/sitemap.xml</pre>
+<p>The <a href="https://github.com/truone01/indexability-check">free checker</a> reports every noindex source per URL, applies bot-scoped headers correctly (<code>bingbot: noindex</code> doesn't affect Googlebot), and checks robots.txt and canonicals too. One caveat: a noindex added by JavaScript after page load isn't visible without rendering.</p>
+<aside><p>Look after many client sites? <strong>CrawlCanary</strong> (in development) will check their important URLs every hour and email you as soon as one is blocked by robots.txt, set to noindex or canonicalised to another host. $19/month for up to 25 sites. It isn't available yet: <a href="https://crawlcanary.2-29-18-178.sslip.io/?ref=ghpages">price and waitlist</a>.</p></aside>
+</main>
+<footer><p>Free, MIT-licensed tooling. Not affiliated with Google. Last updated 26 November 2026.</p></footer>
+</body></html>
